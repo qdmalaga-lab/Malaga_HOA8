@@ -1,0 +1,4 @@
+---
+- name: base role placeholder (no host-specific tasks yet)
+  debug:
+    msg: "Base role applied to {{ inventory_hostname }}"

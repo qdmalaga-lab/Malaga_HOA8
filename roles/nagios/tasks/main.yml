@@ -1,0 +1,160 @@
+---
+- name: install EPEL repository (CentOS)
+  dnf:
+    name: epel-release
+    state: present
+  when: ansible_distribution == "CentOS"
+
+- name: install nagios and plugins (CentOS)
+  dnf:
+    name:
+      - nagios
+      - nagios-plugins-icmp
+      - nagios-plugins-load
+      - nagios-plugins-disk
+      - nagios-plugins-http
+      - nagios-plugins-ssh
+      - nagios-plugins-users
+      - nagios-plugins-procs
+      - nagios-plugins-swap
+    state: latest
+  when: ansible_distribution == "CentOS"
+
+- name: install nagios (Ubuntu)
+  apt:
+    name: nagios4
+    state: latest
+    update_cache: yes
+  when: ansible_distribution == "Ubuntu"
+
+- name: ensure nagios spool directory tree exists and is owned correctly (CentOS)
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: nagios
+    group: nagios
+    mode: 0750
+  loop:
+    - /var/spool/nagios
+    - /var/spool/nagios/cmd
+    - /var/spool/nagios/checkresults
+  when: ansible_distribution == "CentOS"
+
+- name: fix ownership of nagios config directory (CentOS)
+  file:
+    path: /etc/nagios
+    owner: root
+    group: nagios
+    recurse: yes
+  when: ansible_distribution == "CentOS"
+
+- name: ensure nagios config directories are traversable (CentOS)
+  command: find /etc/nagios -type d -exec chmod g+rx {} \;
+  changed_when: false
+  when: ansible_distribution == "CentOS"
+
+- name: ensure nagios config files are group-readable (CentOS)
+  command: find /etc/nagios -type f -exec chmod g+r {} \;
+  changed_when: false
+  when: ansible_distribution == "CentOS"
+  
+- name: fix ownership of nagios log directory (CentOS)
+  file:
+    path: /var/log/nagios
+    owner: nagios
+    group: nagios
+    recurse: yes
+  when: ansible_distribution == "CentOS"
+  
+- name: start and enable nagios service (CentOS)
+  service:
+    name: nagios
+    state: started
+    enabled: true
+  when: ansible_distribution == "CentOS"
+
+- name: start and enable nagios service (Ubuntu)
+  service:
+    name: nagios4
+    state: started
+    enabled: true
+  when: ansible_distribution == "Ubuntu"
+  
+- name: deploy corrected nagios4 apache auth config (Ubuntu)
+  copy:
+    dest: /etc/apache2/conf-available/nagios4-cgi.conf
+    owner: root
+    group: root
+    mode: 0644
+    content: |
+      # apache configuration for nagios 4.x
+
+      ScriptAlias /cgi-bin/nagios4 /usr/lib/cgi-bin/nagios4
+      ScriptAlias /nagios4/cgi-bin /usr/lib/cgi-bin/nagios4
+
+      Alias /nagios4/stylesheets /etc/nagios4/stylesheets
+      Alias /nagios4 /usr/share/nagios4/htdocs
+
+      <DirectoryMatch (/usr/share/nagios4/htdocs|/usr/lib/cgi-bin/nagios4|/etc/nagios4/stylesheets)>
+          Options FollowSymLinks
+          DirectoryIndex index.php index.html
+          AuthType Basic
+          AuthName "Nagios4 Access"
+          AuthUserFile /etc/nagios4/htpasswd.users
+          Require valid-user
+      </DirectoryMatch>
+
+      <Directory /usr/share/nagios4/htdocs>
+          Options +ExecCGI
+      </Directory>
+  notify: reload apache2
+  when: ansible_distribution == "Ubuntu"
+  
+- name: enable nagios4 apache auth config (Ubuntu)
+  command: a2enconf nagios4-cgi
+  notify: reload apache2
+  when: ansible_distribution == "Ubuntu"
+  
+- name: install passlib for htpasswd module (CentOS)
+  dnf:
+    name: python3-passlib
+    state: present
+  when: ansible_distribution == "CentOS"
+
+- name: install passlib for htpasswd module (Ubuntu)
+  apt:
+    name: python3-passlib
+    state: present
+  when: ansible_distribution == "Ubuntu"
+  
+- name: install passlib for htpasswd module (CentOS)
+  dnf:
+    name: python3-passlib
+    state: present
+  when: ansible_distribution == "CentOS"
+
+- name: install passlib for htpasswd module (Ubuntu)
+  apt:
+    name: python3-passlib
+    state: present
+  when: ansible_distribution == "Ubuntu"
+  
+- name: set nagiosadmin web password (CentOS)
+  htpasswd:
+    path: /etc/nagios/passwd
+    name: nagiosadmin
+    password: "NagiosAdmin123!"
+    owner: nagios
+    group: apache
+    mode: 0640
+  when: ansible_distribution == "CentOS"
+
+- name: set nagiosadmin web password (Ubuntu)
+  htpasswd:
+    path: /etc/nagios4/htpasswd.users
+    name: nagiosadmin
+    password: "NagiosAdmin123!"
+    owner: root
+    group: www-data
+    mode: 0640
+  when: ansible_distribution == "Ubuntu"
