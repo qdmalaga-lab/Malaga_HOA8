@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 
 # CPE232_MalagaDexter
 Activity 2: SSH Key-Based Authentication and Setting up Git
@@ -15,3 +16,6 @@ Activity 6: Targeting Specific Nodes and Managing Services
 
 
 Activity 7: Managing Files and Creating Roles in Ansible
+=======
+# Malaga_HOA8
+Activity 8: Install, Configure, and Manage Availability Monitoring tools
